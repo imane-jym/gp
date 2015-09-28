@@ -1,0 +1,43 @@
+
+1.
+google-preftools,tcmalloc要这么装
+./configure --enable-frame_pointers
+make
+sudo make install
+
+2.
+sudo apt-get install liblua5.1-0-dev
+
+3.
+sudo apt-get install libmysqlclient-dev
+
+4.
+sudo apt-get install libtolua++5.1-dev
+
+5.
+sudo apt-get install scons
+wget "http://downloads.sourceforge.net/project/jsoncpp/jsoncpp/0.5.0/jsoncpp-src-0.5.0.tar.gz?r=http%3A%2F%2Fsourceforge.net%2Fprojects%2Fjsoncpp%2F&ts=1294425421&use_mirror=freefr"
+tar -xvzf jsoncpp-src-0.5.0.tar.gz
+cd jsoncpp-src-0.5.0
+scons platform=linux-gcc
+
+6.
+tar -zxvf openssl-1.0.0d.tar.gz 
+cd openssl-1.0.0d/
+#./Configure -m64 shared
+./config -m64 shared -fPIC
+make
+sudo make install
+
+7.
+tar -zxvf curl-7.25.0.tar.gz
+cd curl-7.25.0/
+./configure --with-ssl=/usr/local/ssl
+make
+sudo make install
+
+8.
+sudo apt-get install apache2
+sudo apt-get install phpmyadmin
+ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf.d/phpmyadmin.conf
+/etc/init.d/apache2 restart
