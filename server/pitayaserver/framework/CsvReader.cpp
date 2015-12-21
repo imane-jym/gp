@@ -143,6 +143,8 @@ bool CCsvReader::InitByFile(std::string path)
 	m_table.clear();
 	m_ErrorStr = "";
 	fstream fs(path.c_str());
+	if (fs.fail())
+		return false;
 
 	string line;
 	string one;
