@@ -130,6 +130,8 @@ bool CenterDBCtrl::InitCenterDB( DatabaseMysql* db, uint8 byLoginServerId )
 		m_db->PExecute( "ALTER TABLE gameserver_info ADD COLUMN is_test TINYINT		UNSIGNED	NOT NULL DEFAULT '0'" );
 	if ( !ExistsColumn( "gameserver_info", "version_code" ) )
 		m_db->PExecute( "ALTER TABLE gameserver_info ADD COLUMN version_code INT	UNSIGNED	NOT NULL DEFAULT '0'" );
+	if ( !ExistsColumn( "gameserver_info", "can_register" ) )
+		m_db->PExecute( "ALTER TABLE gameserver_info ADD COLUMN can_register INT	UNSIGNED	NOT NULL DEFAULT '1'" );
 
 	// player_info
 	m_db->PExecute(
@@ -241,6 +243,8 @@ bool CenterDBCtrl::InitCenterDB( DatabaseMysql* db, uint8 byLoginServerId )
 			"PRIMARY KEY(auto_id)"
 		") ENGINE=InnoDB DEFAULT CHARSET=utf8;"
 	);
+	if ( !ExistsColumn( "login_strategy", "is_not" ) )
+		m_db->PExecute( "ALTER TABLE login_strategy ADD COLUMN is_not TINYINT UNSIGNED	NOT NULL DEFAULT '0'" );
 
 	// re_passport_player
 	m_db->PExecute(
@@ -312,6 +316,17 @@ bool CenterDBCtrl::InitCenterDB( DatabaseMysql* db, uint8 byLoginServerId )
 			"platform_type	TINYINT		UNSIGNED	NOT NULL,"
 			"weight				INT		UNSIGNED	NOT NULL,"
 			"diamond_pay		INT		UNSIGNED	NOT NULL,"
+			"limit_number	VARCHAR(64)	CHARACTER SET utf8 NOT NULL,"
+			"limit_type		INT		UNSIGNED	NOT NULL,"
+			"prize_float		INT		UNSIGNED	NOT NULL,"
+			"is_double		INT		UNSIGNED	NOT NULL,"
+			"buy_ex VARCHAR(2560)	CHARACTER SET utf8 NOT NULL,"
+			"ios_goods_id	VARCHAR(64)	CHARACTER SET utf8 NOT NULL,"
+			"android_goods_id	VARCHAR(64)	CHARACTER SET utf8 NOT NULL,"
+			"currency		VARCHAR(64)	CHARACTER SET utf8 NOT NULL,"
+			"good_gift		INT		UNSIGNED	NOT NULL,"
+			"item_icon		VARCHAR(64)	CHARACTER SET utf8 NOT NULL,"
+			"collect_icon		VARCHAR(64)	CHARACTER SET utf8 NOT NULL,"
 			"PRIMARY KEY (server_id, goods_id)"
 		") ENGINE=InnoDB DEFAULT CHARSET=utf8;"
 	);
@@ -341,13 +356,28 @@ bool CenterDBCtrl::InitCenterDB( DatabaseMysql* db, uint8 byLoginServerId )
 	if ( !ExistsColumn( "goods_info", "diamond_pay" ) )
 		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN diamond_pay INT		UNSIGNED	NOT NULL" );
 	if ( !ExistsColumn( "goods_info", "limit_number" ) )
-		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN limit_number varchar(4096)" );
+		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN limit_number varchar(4096) CHARACTER SET utf8 NOT NULL" );
 	if ( !ExistsColumn( "goods_info", "limit_type" ) )
 		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN limit_type  INT		UNSIGNED	NOT NULL" );
 	if ( !ExistsColumn( "goods_info", "prize_float" ) )
-		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN prize_float VARCHAR(256)	NOT NULL" );
+		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN prize_float VARCHAR(256) CHARACTER SET utf8 NOT NULL" );
 	if ( !ExistsColumn( "goods_info", "is_double" ) )
 		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN is_double TINYINT UNSIGNED	NOT NULL" );
+	if ( !ExistsColumn( "goods_info", "buy_ex" ) )
+		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN buy_ex VARCHAR(2560)	CHARACTER SET utf8 NOT NULL" );
+
+	if ( !ExistsColumn( "goods_info", "ios_goods_id" ) )
+		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN ios_goods_id	VARCHAR(64)	CHARACTER SET utf8 NOT NULL" );
+	if ( !ExistsColumn( "goods_info", "android_goods_id" ) )
+		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN android_goods_id VARCHAR(64)	CHARACTER SET utf8 NOT NULL" );
+	if ( !ExistsColumn( "goods_info", "currency" ) )
+		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN currency		VARCHAR(64)	CHARACTER SET utf8 NOT NULL" );
+	if ( !ExistsColumn( "goods_info", "good_gift" ) )
+		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN good_gift		INT		UNSIGNED	NOT NULL" );
+	if ( !ExistsColumn( "goods_info", "item_icon" ) )
+		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN item_icon		VARCHAR(64)	CHARACTER SET utf8 NOT NULL" );
+	if ( !ExistsColumn( "goods_info", "collect_icon" ) )
+		m_db->PExecute( "ALTER TABLE goods_info ADD COLUMN collect_icon		VARCHAR(64)	CHARACTER SET utf8 NOT NULL" );
 
 	// notice_info
 	// Depreciated
@@ -625,6 +655,8 @@ bool CenterDBCtrl::InitCenterDB( DatabaseMysql* db, uint8 byLoginServerId )
 			"PRIMARY KEY( auto_id )"
 		")ENGINE=InnoDB DEFAULT CHARSET=utf8;"
 	);
+	if ( !ExistsColumn( "gameserver_merge_log", "merge_type" ) )
+		m_db->PExecute( "ALTER TABLE gameserver_merge_log ADD COLUMN merge_type INT UNSIGNED DEFAULT 0" );
 
 	// player_detail_info
 	m_db->PExecute(
@@ -701,6 +733,8 @@ bool CenterDBCtrl::InitCenterDB( DatabaseMysql* db, uint8 byLoginServerId )
 			"PRIMARY KEY (`idx`)"
 			") ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8;"
 	);
+	if ( !ExistsColumn( "login_strategy_backup", "is_not" ) )
+		m_db->PExecute( "ALTER TABLE login_strategy_backup ADD COLUMN is_not TINYINT UNSIGNED	NOT NULL DEFAULT '0'" );
 
 	// cdkey_generate_batch
 	if (!ExistsTable("cdkey_generate_batch"))
@@ -845,7 +879,8 @@ bool CenterDBCtrl::UpdateGameServerInfo(
 			std::string		strResVersionConfig,
 			uint8			byCanLogin,
 			uint8 			byStatus,
-			uint32			dwLoginStrategyId )
+			uint32			dwLoginStrategyId,
+	   		uint32			dwCanRegister	)
 {
 	QueryResult* result = m_db->PQuery(
 		"select update_time from gameserver_info where server_id=%u",
@@ -865,9 +900,9 @@ bool CenterDBCtrl::UpdateGameServerInfo(
 		delete result;
 		m_db->PExecute(
 			"update gameserver_info set server_name='%s',ip='%s',local_ip='%s', port=%u, version='%s', res_version='%s', res_version_config='%s', "
-			"online_num=%u, can_login=%u, status=%u, login_strategy_id=%u, res_server_ip='%s', update_time=%u where server_id=%u", strServerName.c_str(),
+			"online_num=%u, can_login=%u, status=%u, login_strategy_id=%u, res_server_ip='%s', update_time=%u, can_register=%u where server_id=%u", strServerName.c_str(),
 			strIp.c_str(), strLocalIp.c_str(), dwPort, strVersion.c_str(), strResVersionFull.c_str(), strResVersionConfig.c_str(), dwOnlineNum,
-			byCanLogin, byStatus, dwLoginStrategyId, strResServerAddr.c_str(), GetDBTime(), dwServerId
+			byCanLogin, byStatus, dwLoginStrategyId, strResServerAddr.c_str(), GetDBTime(), dwCanRegister, dwServerId
 		);
 	}
 	else
@@ -928,6 +963,31 @@ uint32 CenterDBCtrl::GetServerIdMerged( uint32 dwServerIdOrigin )
 	}
 
 	return dwId;
+}
+
+void CenterDBCtrl::GetInfoMerged(uint32 dwServerIdOrigin, uint32& dwMergedServerId, uint32& dwMergedType)
+{
+	uint32 dwId = dwServerIdOrigin;
+	uint32 dwType = 0;
+
+	while ( true )
+	{
+		QueryResult* result = m_db->PQuery( "select server_id_merged,merge_type from gameserver_merge_log where server_id_origin = %u", dwId );
+
+		if ( result )
+		{
+			Field* field = result->Fetch();
+			dwId = field[0].GetUInt32();
+			dwType = field[1].GetUInt32();
+			delete result;
+		}
+		else
+		{
+			break;
+		}
+	}
+	dwMergedServerId = dwId;
+	dwMergedType = dwType;
 }
 
 LoginResultType CenterDBCtrl::ValidateAuthAccount(
@@ -1405,7 +1465,7 @@ bool CenterDBCtrl::GetOrUpdateGameServerStatus(
 	}
 
 	QueryResult *result = m_db->Query(
-		"select server_id, server_name, ip,port,version,res_version,res_version_config,online_num,can_login,status,login_strategy_id, res_server_ip, update_time, version_code from gameserver_info" );
+		"select server_id, server_name, ip,port,version,res_version,res_version_config,online_num,can_login,status,login_strategy_id, res_server_ip, update_time, version_code, can_register from gameserver_info" );
 
 	if ( result )
 	{
@@ -1430,6 +1490,7 @@ bool CenterDBCtrl::GetOrUpdateGameServerStatus(
 			stcServer.strResServerAddr = fields[11].GetString();
 			stcServer.dwLastUpdateTime = fields[12].GetUInt32();
 			stcServer.dwServerVersionCode = fields[13].GetUInt32();
+			stcServer.dwCanRegister = fields[14].GetUInt32();
 
 			std::map<uint32, STC_SERVER_STATUS>::iterator it = mapServer.find( stcServer.dwServerId );
 
@@ -1461,7 +1522,9 @@ bool CenterDBCtrl::GetOrUpdateGameServerStatus(
 			if ( !it->second.bIsAlive )
 			{
 				// check whether this server has been merged
-				uint32 dwServerIdMerged = GetServerIdMerged( it->second.dwServerId );
+//				uint32 dwServerIdMerged = GetServerIdMerged( it->second.dwServerId );
+				uint32 dwServerIdMerged,dwMergedType;
+				GetInfoMerged(it->second.dwServerId, dwServerIdMerged, dwMergedType);
 				if ( dwServerIdMerged != it->second.dwServerId )
 				{
 					std::map<uint32, STC_SERVER_STATUS>::iterator itMaster = mapServer.find( dwServerIdMerged );
@@ -1481,9 +1544,11 @@ bool CenterDBCtrl::GetOrUpdateGameServerStatus(
 						it->second.dwOnlineNum 	= 0;
 						it->second.byCanLogin	= itMaster->second.byCanLogin;
 						it->second.byStatus		= itMaster->second.byStatus;
-						it->second.dwLoginStrategy 	= itMaster->second.dwLoginStrategy;
+						if (dwMergedType == 0)
+							it->second.dwLoginStrategy 	= itMaster->second.dwLoginStrategy;
 						it->second.strResServerAddr = itMaster->second.strResServerAddr;
 						it->second.bIsAlive 	= itMaster->second.bIsAlive;
+						it->second.dwCanRegister = itMaster->second.dwCanRegister;
 					}
 				}
 			}
@@ -1520,7 +1585,7 @@ bool CenterDBCtrl::UpdateClosedGameServer( uint32 dwServerId )
 	}
 }
 
-uint32 CenterDBCtrl::GetOrInsertRoleId( uint64 dwPassportId, uint32 dwServerIdOrigin )
+int CenterDBCtrl::GetOrInsertRoleId( uint64 dwPassportId, uint32 dwServerIdOrigin, uint32 &roleId, uint32 canRegister)
 {
 	QueryResult* result = m_db->PQuery(
 		"select role_id from re_passport_player where passport_id=%llu and server_id_origin=%u",
@@ -1532,21 +1597,27 @@ uint32 CenterDBCtrl::GetOrInsertRoleId( uint64 dwPassportId, uint32 dwServerIdOr
 		Field* field = result->Fetch();
 		uint32 dwRoleId = field[0].GetUInt32();
 		delete result;
-		return dwRoleId;
+		roleId = dwRoleId;
+		return 0;
 	}
 	else
 	{
+		if (!canRegister)
+		{
+			return 1;
+		}
 		uint32 dwRoleId = NextRoleId();
 
 		if (m_db->PExecute( "insert into re_passport_player(role_id, passport_id, server_id, server_id_origin, create_time) values(%u, %llu, %u, %u, %u)",
 				dwRoleId, dwPassportId, GetServerIdMerged(dwServerIdOrigin), dwServerIdOrigin, GetDBTime() ) )
 		{
-			return dwRoleId;
+			roleId = dwRoleId;
+			return 0;
 		}
 		else
 		{
 			IME_ERROR( "Error When Insert Into re_passport_player" );
-			return 0;
+			return -1;
 		}
 	}
 }
@@ -2119,7 +2190,8 @@ uint32 CenterDBCtrl::CreateCharge(
 		uint16		wPlatform,
 		uint16		wPaymentType,
 		uint32		dwPaymentTime,
-		std::string	strClientOrderId )
+		std::string	strClientOrderId,
+	    std::string	addition2	)
 {
 	m_db->escape_string( strCurrency );
 	m_db->escape_string( strInnerOrderId );
@@ -2129,10 +2201,10 @@ uint32 CenterDBCtrl::CreateCharge(
 
 	bool succ = m_db->PExecute(
 		"insert into charge_info(role_id, goods_id, goods_quantity, currency, value, type, inner_order_id,"
-		"platform_order_id, platform_account_id, platform, platform_payment_type, payment_time, client_order_id) "
-		"values(%u, %u, %u, '%s', %u, 0, '%s', '%s', '%s', %u, %u, %u, '%s')", dwRoleId, dwGoodsId, dwGoodsQty,
+		"platform_order_id, platform_account_id, platform, platform_payment_type, payment_time, client_order_id, addition2, state) "
+		"values(%u, %u, %u, '%s', %u, 0, '%s', '%s', '%s', %u, %u, %u, '%s', '%s', 1)", dwRoleId, dwGoodsId, dwGoodsQty,
 		strCurrency.c_str(), dwValue, strInnerOrderId.c_str(), strPlatformOrderId.c_str(), strPlatformAccount.c_str(),
-		wPlatform, wPaymentType, dwPaymentTime, strClientOrderId.c_str()  );
+		wPlatform, wPaymentType, dwPaymentTime, strClientOrderId.c_str(), addition2.c_str() );
 
 	if ( succ )
 	{
@@ -2315,7 +2387,7 @@ void CenterDBCtrl::GetGoodsInfoOfGameServer( std::map< uint32, STC_GOODS_INFO>& 
 	QueryResult* result = m_db->PQuery(
 		"select goods_id, shop_type, buy_type_id, buy_content_id, buy_count, cost_type_id, cost_content_id, cost_count, cost_count_old,"
 		"status, limit_day, sort_idx, icon_id, goods_name, description, limit_once, limit_time_start, limit_time_end,"
-		"vip_show, vip_buy, buy_count_total, buy_count_inc, platform_goods_id, platform_type, weight, diamond_pay, limit_number, limit_type, prize_float, is_double from goods_info where server_id=%u", dwGameServerId
+		"vip_show, vip_buy, buy_count_total, buy_count_inc, platform_goods_id, platform_type, weight, diamond_pay, limit_number, limit_type, prize_float, is_double, buy_ex, ios_goods_id, android_goods_id, currency, good_gift, item_icon, collect_icon from goods_info where server_id=%u", dwGameServerId
 	);
 
 	vGoods.clear();
@@ -2357,7 +2429,15 @@ void CenterDBCtrl::GetGoodsInfoOfGameServer( std::map< uint32, STC_GOODS_INFO>& 
 			t.dwLimitType		= field[27].GetUInt32();
 			t.dwPrizeFloat		= field[28].GetUInt32();
 			t.byIsDouble		= field[29].GetUInt32();
+			t.buyEx				= field[30].GetCppString();
 
+//			t.IOSGoodId			= field[31].GetCppString();
+//			t.AndroidGoodId		= field[32].GetCppString();
+			t.thirdGoodId		= field[31].GetCppString();
+			t.currency			= field[33].GetCppString();
+			t.goodGift			= field[34].GetUInt32();
+			t.itemIcon			= field[35].GetCppString();
+			t.collectionIcon	= field[36].GetCppString();
 			vGoods.insert( std::make_pair( t.dwGoodsId, t ) );
 			result->NextRow();
 		}
@@ -2388,11 +2468,11 @@ void CenterDBCtrl::UpdateGoodsInfoOfGameServer( std::map<uint32, STC_GOODS_INFO>
 	for ( std::map<uint32, STC_GOODS_INFO>::iterator it = vGoods.begin();
 			it != vGoods.end(); ++it )
 	{
-		m_db->PExecute( "insert into goods_info(server_id, goods_id, shop_type, buy_type_id, "
+		m_db->PExecute( "insert ignore into goods_info(server_id, goods_id, shop_type, buy_type_id, "
 				"buy_content_id, buy_count, cost_type_id, cost_content_id, cost_count, cost_count_old, "
 				"status, limit_day, sort_idx, icon_id, goods_name, description, limit_once, limit_time_start, limit_time_end,"
-				"vip_show, vip_buy, buy_count_total, buy_count_inc, platform_goods_id, platform_type, weight, diamond_pay, limit_number, limit_type, prize_float, is_double) values(%u, %u, "
-				"%u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, '%s', '%s', %d, %u, %u, %u, %u, %u, %u, '%s', %u, %u, %u, '%s', %u, %u, %u)",
+				"vip_show, vip_buy, buy_count_total, buy_count_inc, platform_goods_id, platform_type, weight, diamond_pay, limit_number, limit_type, prize_float, is_double, ios_goods_id, android_goods_id, currency, good_gift, item_icon, collect_icon, buy_ex) values(%u, %u, "
+				"%u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, '%s', '%s', %d, %u, %u, %u, %u, %u, %u, '%s', %u, %u, %u, '%s', %u, %u, %u, '%s', '%s', '%s', %u, '%s', '%s', '%s')",
 				dwGameServerId,
 				it->second.dwGoodsId,
 				it->second.byShopType,
@@ -2423,7 +2503,15 @@ void CenterDBCtrl::UpdateGoodsInfoOfGameServer( std::map<uint32, STC_GOODS_INFO>
 			    it->second.dwLimitNumber.c_str(),
 				it->second.dwLimitType,
 				it->second.dwPrizeFloat, 
-				it->second.byIsDouble);
+				it->second.byIsDouble,
+				it->second.thirdGoodId.c_str(),
+				it->second.thirdGoodId.c_str(),
+				it->second.currency.c_str(),
+				it->second.goodGift,
+				it->second.itemIcon.c_str(),
+				it->second.collectionIcon.c_str(),
+				it->second.buyEx.c_str()
+				);
 	}
 }
 
@@ -3362,9 +3450,41 @@ static bool CheckIp( std::string strIp, std::string strPattern )
 	}
 	return true;
 }
+bool CenterDBCtrl::CheckWhiteIP(std::string strIp)
+{
+	std::string strError = "Timeout";
+	QueryResult* result = m_db->PQuery( "select value from login_strategy where strategy_id=255 and type=%u",
+			E_LOGIN_STRATEGY_TYPE_IP );
+	if ( result == NULL )
+	{
+		IME_ERROR( "CheckLoginToken ip %s %s", strIp.c_str(), strError.c_str() );
+		return false;
+	}
 
+	int cnt = result->GetRowCount();
+	bool bIpInWhite = false;
 
-bool CenterDBCtrl::CheckLoginToken( uint32 dwRoleId, std::string strIp )
+	for ( int i = 0; i < cnt; i++ )
+	{
+		if ( CheckIp( strIp, result->Fetch()[0].GetString() ) )
+		{
+			bIpInWhite = true;
+			break;
+		}
+		result->NextRow();
+	}
+
+	delete result;
+
+	if ( bIpInWhite )
+	{
+		IME_LOG( "CheckLoginToken Success, IP In White List" );
+		return true;
+	}
+	return false;
+}
+
+bool CenterDBCtrl::CheckLoginToken( uint32 dwRoleId, std::string strIp, bool &isWhite )
 {
 	uint64 ddwPassportId = GetPassportId( dwRoleId );
 	if ( ddwPassportId == 0 )
@@ -3387,6 +3507,7 @@ bool CenterDBCtrl::CheckLoginToken( uint32 dwRoleId, std::string strIp )
 
 		if ( GetDBTime() < dwLoginTime + 180 )
 		{
+			isWhite = false;
 			IME_USER_LOG( "CheckLoginToken", dwRoleId, "Success" );
 			return true;
 		}
@@ -3419,6 +3540,7 @@ bool CenterDBCtrl::CheckLoginToken( uint32 dwRoleId, std::string strIp )
 
 			if ( bIpInWhite )
 			{
+				isWhite = true;
 				IME_USER_LOG( "CheckLoginToken", dwRoleId, "Success, IP In White List" );
 				return true;
 			}

@@ -263,12 +263,11 @@ void CServer::OnWrite(evutil_socket_t fd, short ev, void *arg)
 	unsigned int dwTotalLen = 0;
 	if (client->GetBufferOutput()->GetSize() > E_MAX_BUFFER_LEN)
 	{
-		IME_LOG("Client(%d) max buffer len when write",fd);
+		IME_LOG("Client(%d) max buffer len when write, size=%lu",fd, client->GetBufferOutput()->GetSize());
 		client->CloseSocket();
 		client->GetServer()->DeRefClient(client);
 		return;
 	}
-
 	while(client->GetBufferOutput()->GetSize() > 0)
 	{
 		len = client->GetBufferOutput()->Sends(fd);

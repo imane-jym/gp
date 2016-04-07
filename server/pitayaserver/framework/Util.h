@@ -33,6 +33,9 @@ public:
 
 	static void StrMerge(std::string & src, const std::string & sep, const std::vector<uint32_t> & vecRes);
 	
+	static void StrVecSplit(std::string & src, const std::string & sep1, const std::string & sep2, std::vector<std::vector<uint32_t> > & vecRes);
+	static void StrVecSplit(std::string & src, const std::string & sep1, const std::string & sep2, std::vector<std::vector<std::string> > & vecRes);
+
 	static int DaemonInit();
 
 	static bool SetRLimit();
@@ -42,6 +45,8 @@ public:
 	static int RandFactor(std::vector<uint16>& value);
 
 	static int RandFactor(std::vector<int>& value);
+
+	static std::vector<int> RandFactorMulti(std::vector<int>& value, int number);
 
 	// 未检查 输入数据的有效性
 	static int RandFactor(const std::vector<int>& value, int nBegin, int nEnd);
@@ -127,6 +132,16 @@ public:
 		return t.tm_wday;
 	}
 
+	static bool IsSameHour(uint32 cur, uint32 last)
+	{
+		struct tm t1,t2;
+		time_t ttime = cur;
+		localtime_r(&ttime, &t1);
+		time_t ttime2 = last;
+		localtime_r(&ttime2, &t2);
+		return t1.tm_wday == t2.tm_wday && t1.tm_hour == t2.tm_hour;
+	}
+
 	// 游戏业务公式
 	// 计算最大活力值
 	static uint32 CalcEnergyMax(uint8 byCastleLv)
@@ -206,6 +221,10 @@ public:
 	
 	static uint32_t GetTime();
 	static int timeOff;
+
+	static void shutDown();
+
+	static uint32_t str2Time(std::string str, const char *format = NULL);
 };
 
 #endif

@@ -32,6 +32,7 @@ INIFile g_serverIni;
 bool gDaemonFlag = false;
 
 volatile bool g_stopEvent = false;
+volatile bool g_stopEvent2 = false;
 
 //extern int tolua_LuaExport_open(lua_State * pState);
 
@@ -208,12 +209,15 @@ int main(int argc, char * argv[])
 	ZThread::Thread netThread(pNetRunnable);
 	netThread.setPriority((ZThread::Priority)1);
 
+	ZThread::Thread *pRelayClientThread = NULL;
 	if (CSet::ClientSessionRun)
 	{
 		///- Launch CRelayClientRunnable thread
 		CRelayClientRunnable * pRelayClientRunnable = new CRelayClientRunnable;
-		ZThread::Thread relayClientThread(pRelayClientRunnable);
-		relayClientThread.setPriority((ZThread::Priority)1);
+//		ZThread::Thread relayClientThread(pRelayClientRunnable);
+//		relayClientThread.setPriority((ZThread::Priority)1);
+		pRelayClientThread = new ZThread::Thread(pRelayClientRunnable);
+		pRelayClientThread->setPriority((ZThread::Priority)1);
 	}
 
 	///- Launch CWorldRunnable thread
@@ -223,10 +227,13 @@ int main(int argc, char * argv[])
 	worldThread.wait();
 	netThread.wait();
 	//relayClientThread.wait();
+	if (pRelayClientThread != NULL)
+		pRelayClientThread->wait();
 
 	//unhooksignal	
 	UnHookSignals();
 	EndServer();
+	IME_LOG("GameServer End!");
 
 	return 0;
 }

@@ -53,6 +53,15 @@ static inline const char* format_error( const char* fmt, ... )
 		return false;										\
 	}
 
+#define RETURN_FALSE_IF_PARAMS_SIZE_INVALID_WITH_SEQ( _COMP, _SIZE, _SEQ )	\
+	std::vector<std::string> vParam;						\
+	CUtil::StrSplit( m_strParams, _SEQ, vParam );			\
+	if ( !(vParam.size() _COMP _SIZE) )						\
+	{														\
+		SetErrorMsg( format_error("Param Count Error, count=%d, require "#_COMP" %d", (int)vParam.size(), _SIZE ) );	\
+		return false;										\
+	}
+
 #define GET_CMD_PARAM_STRING( _IDX )		\
 		vParam[_IDX]
 

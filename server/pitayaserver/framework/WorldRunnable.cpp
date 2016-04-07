@@ -13,6 +13,7 @@
 #endif
 
 extern volatile bool g_stopEvent;
+extern volatile bool g_stopEvent2;
 
 void CWorldRunnable::run()
 {
@@ -59,6 +60,7 @@ void CWorldRunnable::run()
 	sSessCtrl->AllOffline();
 	//todo
 	//do some uninit things here
+	g_stopEvent2 = true;	
 	IME_LOG("WorldRunnable thread exit");
 }
 

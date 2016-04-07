@@ -13,6 +13,8 @@
 
 #include "Log.h"
 
+extern volatile bool g_stopEvent;
+
 int CUtil::timeOff = 0;
 
 void CUtil::StrSplit(const std::string & src, const std::string & sep, std::vector<std::string> & vecRes)
@@ -85,6 +87,32 @@ void CUtil::StrMerge(std::string & src, const std::string & sep, const std::vect
 		src += sep;
 		sprintf(temp, "%u", *i);
 		src += temp;
+	}
+}
+void CUtil::StrVecSplit(std::string & src, const std::string & sep1, const std::string & sep2, std::vector<std::vector<std::string> > & vecRes)
+{
+	vecRes.clear();
+	std::vector<std::string> strVec1;
+	StrSplit(src, sep1, strVec1);
+	for (std::vector<std::string>::iterator iter = strVec1.begin(); iter != strVec1.end(); ++iter)
+	{
+		std::vector<std::string> strVec2;
+		StrSplit(*iter, sep2, strVec2);
+		if (strVec2.size() > 0)
+			vecRes.push_back(strVec2);
+	}
+}
+void CUtil::StrVecSplit(std::string & src, const std::string & sep1, const std::string & sep2, std::vector<std::vector<uint32_t> > & vecRes)
+{
+	vecRes.clear();
+	std::vector<std::string> strVec1;
+	StrSplit(src, sep1, strVec1);
+	for (std::vector<std::string>::iterator iter = strVec1.begin(); iter != strVec1.end(); ++iter)
+	{
+		std::vector<uint32_t> strVec2;
+		StrSplit(*iter, sep2, strVec2);
+		if (strVec2.size() > 0)
+			vecRes.push_back(strVec2);
 	}
 }
 
@@ -240,6 +268,29 @@ int CUtil::RandFactor(std::vector<int>& value)
 	return -1;
 }
 
+std::vector<int> CUtil::RandFactorMulti(std::vector<int>& value, int number)
+{
+	std::vector<int> temp = value;
+	std::vector<int> vecIndex;
+	for (unsigned int i = 0; i < value.size(); i++)
+	{
+		vecIndex.push_back(i);
+	}
+
+	std::vector<int> vecResult;
+	for (int i = 0; i < number; i++)
+	{
+		int result = CUtil::RandFactor(temp);
+		if (result < (int)vecIndex.size())
+		{
+			vecResult.push_back(vecIndex[result]);	
+			temp.erase(temp.begin() + result);
+			vecIndex.erase(vecIndex.begin() + result);
+		}
+	}
+	return vecResult;
+}
+
 int CUtil::RandFactor(const std::vector<int>& value, int nBegin, int nEnd)
 {
 	if ((size_t)nEnd > value.size())
@@ -380,7 +431,7 @@ uint32 CUtil::PowUint32( uint32 x, uint32 y )
 bool CUtil::IsToday( uint32 dwTime )
 {
 	time_t timeInput = dwTime;
-	time_t timeNow = time(NULL);
+	time_t timeNow = GetTime();
 	struct tm stcTmInput;
 	struct tm stcTmNow;
 	localtime_r(&timeInput, &stcTmInput);
@@ -583,4 +634,34 @@ bool CUtil::IsInSection(uint32_t t, const std::vector<TimeSection> &section)
 uint32_t CUtil::GetTime()
 {
 	return timeOff + time(NULL);
+}
+
+void CUtil::shutDown()
+{
+	g_stopEvent = true;
+	IME_LOG("server was shut down!!!");
+}
+
+uint32_t CUtil::str2Time(std::string str, const char *format)
+{
+	struct tm tm1;
+	memset(&tm1, 0, sizeof(struct tm));
+	char *ret = NULL;
+	if (format == NULL)
+	{
+		ret = strptime(str.c_str(), "%Y:%m:%d-%H:%M:%S", &tm1);
+	}
+	else
+	{
+		ret = strptime(str.c_str(), format, &tm1);
+	}
+	if (ret == NULL)
+	{
+		IME_ERROR("format error str %s", str.c_str());
+		return 0;
+	}
+	int t = mktime(&tm1);
+	if (t == -1)
+		return 0;
+	return t;
 }

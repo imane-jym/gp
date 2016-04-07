@@ -208,6 +208,8 @@ class Log
 
 #define sLog Log::Instance()
 
+#define IME_TEST_LOG(opt,fmt, ...)		sLog->outChar("%s,"fmt, opt,  ##__VA_ARGS__)
+
 //#define IME_DOLLAR_LOG(fmt, ...)		sLog->outDollar("%s:%d:%s- "fmt, FILENAME, __LINE__, __FUNCTION__,  ##__VA_ARGS__)
 #define IME_CHAR_LOG(userid,opt,fmt, ...)		sLog->outChar("%u,%u,%s,%s:%d:%s,"fmt, LOGL_NORMAL, userid, opt, FILENAME, __LINE__, __FUNCTION__,  ##__VA_ARGS__)
 #define IME_USER_LOG(opt,userid,fmt, ...)	sLog->outChar("%u,%u,%s,%s:%d:%s,"fmt, LOGL_NORMAL, userid, opt, FILENAME, __LINE__, __FUNCTION__,  ##__VA_ARGS__);	

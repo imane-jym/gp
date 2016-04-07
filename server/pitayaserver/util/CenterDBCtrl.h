@@ -84,6 +84,7 @@ enum LoginStrategyType
 
 	// 黑名单
 	E_LOGIN_STRATEGY_TYPE_SVN_VERSION_BLACK_LIST = 8,
+	E_LOGIN_STRATEGY_TYPE_DEVICE_NUMBER = 10
 };
 
 enum LoginBindResultType
@@ -111,7 +112,8 @@ enum NoticeUseType
 	E_NOTICE_USE_TYPE_LOGIN_TIME_RANGE			= 10,
 	E_NOTICE_USE_TYPE_GAME_TIME_RANGE			= 11,
 	E_NOTICE_USE_TYPE_CUSTOM_SERVICE_TIME_RANGE	= 12,
-	E_NOTICE_USE_TYPE_ONLINE_PARA				= 13
+	E_NOTICE_USE_TYPE_ONLINE_PARA				= 13,
+	E_NOTICE_USE_TYPE_CHAT_ADDR					= 14
 };
 
 enum NoticeConditionType
@@ -145,6 +147,7 @@ typedef struct STC_SERVER_STATUS
 	uint32			dwLoginStrategy;
 	uint32			dwLastUpdateTime;
 	bool 			bIsAlive;
+	uint32			dwCanRegister;
 } STC_SERVER_STATUS;
 
 typedef struct STC_GOODS_INFO
@@ -180,6 +183,14 @@ typedef struct STC_GOODS_INFO
 	uint32			dwLimitType;
 	uint32			dwPrizeFloat;
 	uint32			byIsDouble;
+	std::string		buyEx;
+	std::string		thirdGoodId;
+//	std::string		IOSGoodId;
+//	std::string		AndroidGoodId;
+	std::string		currency;
+	uint32			goodGift;
+	std::string		itemIcon;
+	std::string		collectionIcon;
 	STC_GOODS_INFO()
 	{
 		dwGoodsId = 0;
@@ -213,6 +224,7 @@ typedef struct STC_GOODS_INFO
 		dwLimitType = 0;
 		dwPrizeFloat = 0;
 		byIsDouble = 0;
+		goodGift = 0;
 	}
 } STC_GOODS_INFO;
 
@@ -314,8 +326,10 @@ public:
 			std::string		strResVersionConfig,
 			uint8			byCanLogin,
 			uint8 			byStatus,
-			uint32			dwLoginStrategyId );
+			uint32			dwLoginStrategyId,
+		    uint32			dwCanRegister	);
 	static uint32 GetServerIdMerged( uint32 dwServerId );
+	static void GetInfoMerged(uint32 dwServerId, uint32& dwMergedServerId, uint32& dwMergedType);
 	static bool UpdateServerVersionCode( uint32 dwGameServerId, uint32 dwServerVersionCode );
 	static uint32 GetServerVersionCode( uint32 dwGameServerId );
 
@@ -391,7 +405,7 @@ public:
 
 	static bool UpdateClosedGameServer( uint32 dwServerId );
 
-	static uint32 GetOrInsertRoleId( uint64 dwPassportId, uint32 dwServerId );
+	static int GetOrInsertRoleId( uint64 dwPassportId, uint32 dwServerId, uint32 &roleId, uint32 canRegister);
 	static bool IsRoleForbid( uint32 dwRole );
 
 	static bool RegisterPassport(
@@ -508,7 +522,8 @@ public:
 			uint16		wPlatform,
 			uint16		wPaymentType,
 			uint32		dwPaymentTime,
-			std::string	strClientOrderId );
+			std::string	strClientOrderId,
+		    std::string	addition2	);
 
 	static bool HasCharge( uint16 wPlatform, std::string strPlatformOrderId );
 
@@ -616,7 +631,8 @@ public:
 	////////// login token checking /////////////
 	static void CreateLoginToken( uint64 ddwPassportId, std::string strIp );
 	static void ClearLoginToken( uint32 dwRoleId );
-	static bool CheckLoginToken( uint32 dwRoleId, std::string strIp );
+	static bool CheckWhiteIP(std::string strIp);
+	static bool CheckLoginToken( uint32 dwRoleId, std::string strIp, bool &isWhite );
 	static void CreateLoginTokenByRoleId( uint64 roleId, uint32 time);
 
 	// 玩家信息解析相关
