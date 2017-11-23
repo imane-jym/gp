@@ -22,28 +22,10 @@
 #include <stdint.h>
 #include <string>
 #include "WorldPacket.h"
+#include "LoginGroup.h"
 
 class CRelayClientSession;
 class CPlayerSession;
-
-//enum
-//{
-//	MAIN_THREAD,                                /* main */
-//	WORLD_THREAD                                /* logical */
-//};
-//
-//enum
-//{
-//	TIMER_1S = 1,
-//	TIMER_3S = 3,
-//	TIMER_5S = 5,
-//	TIMER_30S = 30,
-//	TIMER_1MIN = 60,
-//	TIMER_3MIN = 180,
-//	TIMER_5MIN = 300,
-//	TIMER_10MIN = 600,
-//	TIMER_30MIN = 1800,
-//}; 
 
 /* 
  * ===  FUNCTION  ======================================================================
@@ -93,6 +75,7 @@ class CHandlerPlayersession
 		~CHandlerPlayersession ();
 		void SetstrIp(std::string ip) { m_strIp = ip;};
 		void SetCPlayerSession(CPlayerSession *p) {m_pPlayer = p;};
+		void OnKick(uint32_t type);
 
 		/* ====================  OPERATIONS     ======================================= */
 
@@ -140,12 +123,100 @@ class CHandlerPlayersession
 		 */
 		void SendPacketToRelay(WorldPacket *packet, int key);
 
+		/* =========================== */
+	public:
+		/// Timers for different object refresh rates
+		enum E_USER_STATUS
+		{
+			E_STATUS_CONNECTED,			//连接到服务器
+			E_STATUS_AUTHED,			//认证通过
+		};
+
+		enum E_LOGIN_RESULT
+		{
+			E_LOGIN_RESULT_OK	= 0,
+			E_LOGIN_NO_PLAYER	= 1,
+			E_LOGIN_PWD_ERROR	= 2
+		};
+
+		enum E_REGISTER_RESULT
+		{
+			E_REGISTER_RESULT_OK		= 0,
+			E_REGISTER_RESULT_DEPLICATE	= 1,
+			E_REGISTER_RESULT_INVALID	= 2
+		};
+
+		enum E_CHOOSE_SERVER_RESULT
+		{
+			E_CHOOSE_SERVER_RESULT_OK		 = 0,
+			E_CHOOSE_SERVER_RESULT_NOT_FOUND = 1,
+			E_CHOOSE_SERVER_RESULT_VERSION	 = 2,
+			E_CHOOSE_SERVER_RESULT_FORBID	 = 3,
+			E_CHOOSE_SERVER_RESULT_ERROR	 = 4,
+			E_CHOOSE_SERVER_RESULT_NEW_ACCOUNT_FORBID	 = 5,
+		};
+
+		typedef void (CHandlerPlayersession::*OpcodeHandlerFunc)(WorldPacket &packet);
+		typedef std::map<uint16, OpcodeHandlerFunc> OpcodeHandlerMap;
+
+		E_USER_STATUS GetUserStatus() { return m_eUserStatus; }
+		uint64 GetAccountId() { return m_dwAccountId; }
+		void SetAccountId( uint64 dwAccountId ) { m_eUserStatus = E_STATUS_AUTHED; m_dwAccountId = dwAccountId; }
+
+		void AddSessionToWorker();
+		void Online();
+		void Offline();
+		void OnTimer5s();
+		void OnTimer1min();
+		void OnTimer3min();
+
+		/////////////////////////////////////////
+		void HandlerAccountLogin(WorldPacket& packet);
+		void HandlerPlatformLogin(WorldPacket& packet);
+		void HandlerFastLogin(WorldPacket& packet);
+
+		void HandlerGetServerList(WorldPacket& packet);
+		void HandlerChooseServer(WorldPacket& packet);
+
+		void HandlerRegister(WorldPacket& packet);
+		void HandlerModifyPwd(WorldPacket& packet);
+		void HandlerExistPassport(WorldPacket& packet);
+		std::string GetRemoteIP() { return m_strIp; }
+
+	private:
+		void InitOpcodeHandler();
+		OpcodeHandlerFunc FindOpcodeHandlerFunc(uint16 opcode);
+
+		void SendLoginResult( uint8 byResult );
+		void SendRegisterResult( uint8 byResult );
+		void SendModifyPwdResult( uint8 byResult );
+
+		void GetServerListAfterFilter( CLoginGroup::ServerStatusContainer& oServers );
+		bool ServerAccessable( const CenterDB::STC_SERVER_STATUS& server, uint16 wPlatform, uint8 byGmAuth  );
+		bool CheckIp( std::string strIp, std::string strPattern );
+
 	private:
 		/* ====================  DATA MEMBERS  ======================================= */
 		CPlayerSession *m_pPlayer;
 		std::string m_strIp;
+		
+		/* ======================== */
+		OpcodeHandlerMap m_mapOpcodeHandlerFuncs;
+		E_USER_STATUS 	m_eUserStatus;
+		uint64			m_dwAccountId;
+		std::string		m_strClientVersion;
+		std::string		m_strClientSvnVersion;
+
+		std::string		m_strDevice;
+		uint16			m_wPlatformId;
+		uint32			m_dwRegTime;
+		std::string		m_strUid;
+
+		bool			m_bNoPacket;
+		uint32			m_dwLastGetServerListTime;
 }; /* -----  end of class CHandlerPlayersession  ----- */
 
+void handlerOnConnect(bool isReconnect, int key = 0);
 
 /*
  * =====================================================================================
